@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/pranman/django-tailwind-daisyui-template/security/advisories/new
+    about: Use a private security report for vulnerabilities; do not disclose them in a public issue.
+  - name: Setup and support
+    url: https://github.com/pranman/django-tailwind-daisyui-template/blob/main/docs/support.md
+    about: Find supported runtimes, troubleshooting guidance, and support scope.
