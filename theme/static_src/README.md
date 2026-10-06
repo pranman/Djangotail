@@ -44,3 +44,11 @@ form components, and line-clamp and aspect-ratio utilities are built into Tailwi
 Run `npm --prefix theme/static_src test` from the root to compile an isolated
 copy, verify the demo components and all three theme palettes, and prove that
 the watcher rebuilds both edited and newly created templates.
+
+The scoped npm override keeps `@tailwindcss/cli` on Parcel watcher 2.5.6 until
+Tailwind updates its exact 2.5.1 dependency. That patch line removes the
+`micromatch` → `braces` chain affected by
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
+It preserves the pinned Tailwind and daisyUI versions. When updating Tailwind,
+check whether the override can be removed, regenerate the lockfile, and run
+`npm audit`, the CSS build, and the watcher regressions above.
