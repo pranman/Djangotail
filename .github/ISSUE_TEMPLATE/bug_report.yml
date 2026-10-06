@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a reproducible problem with setup, development, or the starter.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For suspected vulnerabilities, use the private reporting link on the Security tab.
+        Remove secrets, tokens, .env values, and personal data from logs before posting.
+  - type: input
+    id: version
+    attributes:
+      label: Release or commit
+      description: Include the tag or `git rev-parse HEAD`, and whether the project has local changes.
+      placeholder: v0.1.0 or commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Platform and runtimes
+      description: Include OS/version, shell, Python, Node, npm, and uv or pip versions; add browser/version for UI problems.
+      placeholder: |
+        OS and shell:
+        python --version:
+        node --version:
+        npm --version:
+        Installer and version:
+        Browser, if relevant:
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps and exact commands
+      description: Include the command's working directory and whether this was a fresh project or an existing setup.
+      placeholder: |
+        1. Start from a fresh checkout of ...
+        2. Run ... from ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+      description: Include the relevant error output, exit code, or screenshot. Do not attach your .env file or database.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics and additional context
+      description: If possible, include `python bootstrap.py check` output and what you have already tried.

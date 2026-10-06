@@ -1,0 +1,29 @@
+name: Requirement or improvement
+description: Track a concrete change, its scope, and how success will be checked.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or requirement
+      description: Describe who needs the change and the behavior that is missing.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope
+      description: Include examples, constraints, and related issues where useful.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Describe the observable result and how it can be verified.
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Implementation plan
+      description: For accepted major changes, record dependencies and a plan of 3–7 focused commits before implementation. This may be filled in during triage.

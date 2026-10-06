@@ -6,6 +6,10 @@ The [Verify starter workflow](https://github.com/pranman/django-tailwind-daisyui
 
 Use a supported Python (3.12–3.14), Node.js (22.10+ within 22, or 24), and npm (10 or 11). Install uv to exercise the uv route. These commands do not change your working project's environment, configuration, database, or stylesheet:
 
+Run checkout verification from a Git checkout with Git on PATH: the verifier uses
+`git ls-files` to copy tracked source. The public bootstrap commands also work
+from an extracted source archive and do not require Git.
+
 ```bash
 python scripts/verify_starter.py --installer uv --cold
 python scripts/verify_starter.py --installer pip --cold
@@ -48,6 +52,43 @@ The checks prove that:
 - The real development launcher serves Django, rebuilds changed CSS, rejects occupied ports, and shuts down after interruption or a watcher failure. Focused process-tree tests also prove that failing server/watcher parents do not leave their sibling or grandchildren running.
 - The homepage serves the real compiled stylesheet once. Chromium checks representative utility/component computed styles, light/dark/cupcake themes, keyboard/mobile behavior, accessibility, and real CSS/template browser reload.
 - A production CSS build is collected without changing its bytes in a separate environment installed from hashed `requirements.txt`, with Playwright and browser-reload absent; an explicit representative HTTPS configuration passes `check --deploy --fail-level WARNING`; WSGI starts with Node/npm absent from PATH. Deployment infrastructure and database suitability still require the application's own deployment decisions.
+
+## Development readiness
+
+Before the lifecycle check edits source CSS, the verifier requires both an HTTP
+200 response from Django and successful completion of the CSS watcher's initial
+build. An HTTP response alone is insufficient: Django can begin serving while
+Tailwind is still reading its initial input or installing filesystem watches.
+The production build performed before the launcher starts its children is also
+not evidence that the separate watcher is ready.
+
+The verifier enables `DEBUG=tailwindcss` only for its development subprocesses.
+For the pinned CLI, it requires a successful `Done in` message and the specific
+`[@tailwindcss/cli] (initial build)` completion diagnostic after
+`Starting CSS watcher...`. This distinguishes the watcher's completed startup
+from the preceding production build and from incremental/no-op callbacks.
+ANSI colors and Windows line endings are accepted. The application and normal
+bootstrap commands do not need this diagnostic environment variable.
+
+`development-readiness.log` records the two readiness conditions or names the
+condition that timed out. A managed child or launcher exit is reported with its
+exit code when available; inspect `development.log` for the underlying error.
+A startup timeout does not cause the verifier to edit CSS early or skip checks.
+If a Tailwind CLI update changes its diagnostics, update the readiness parser
+and regression fixtures together; retain the requirement for actual watcher
+startup completion.
+
+After startup, the suite still performs a real CSS edit and restoration and
+waits for both compiled results. It then drains pending browser-reload events
+before inspecting rendered styles. `browser-readiness.log` describes that
+separate reload-stream check. The later browser test still makes and verifies
+new template and CSS edits.
+
+Focused regressions use a real HTTP process with a watcher completion gate to
+exercise HTTP-first startup, delayed initial compilation, no-op callbacks,
+early exit, and timeout without using a fixed startup delay. These tests support
+the hosted matrix; local results do not replace successful checks on every
+platform lane for the release commit.
 
 ## Diagnostics
 
