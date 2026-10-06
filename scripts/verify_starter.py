@@ -8,7 +8,10 @@ import sqlite3
 import sys
 import subprocess
 
-from starter_checks import CommandLog, VerificationError, disposable_checkout, verify_lifecycle
+from starter_checks import (
+    CommandLog, VerificationError, disposable_checkout, verify_lifecycle,
+    verify_production, verify_stylesheet_response,
+)
 
 
 def verify_setup(checkout, installer, log):
@@ -55,12 +58,29 @@ def main():
     parser.add_argument("--installer", choices=("uv", "pip"), required=True)
     parser.add_argument("--cold", action="store_true", help="use new empty uv, pip and npm caches")
     parser.add_argument("--artifacts", type=Path, default=Path("verification-artifacts"))
+    parser.add_argument("--browser", action="store_true", help="install Chromium and run real rendering/theme/reload checks")
     args = parser.parse_args()
     log = CommandLog(args.artifacts.resolve())
     try:
         with disposable_checkout(cold=args.cold) as checkout:
             verify_setup(checkout, args.installer, log)
-            verify_lifecycle(checkout, log)
+            if args.browser:
+                browser_install = [checkout.python, "-m", "playwright", "install"]
+                if sys.platform.startswith("linux"):
+                    browser_install.append("--with-deps")
+                log.run("browser-install", [*browser_install, "chromium"],
+                        cwd=checkout.root, env=checkout.environment)
+
+            def browser_checks(base_url):
+                verify_stylesheet_response(checkout, base_url)
+                if args.browser:
+                    log.run("browser-regressions", [checkout.python, "scripts/check_browser.py",
+                            "--base-url", base_url, "--project-root", checkout.root,
+                            "--artifacts", log.directory / "browser", "--check-reload"],
+                            cwd=checkout.root, env=checkout.environment, timeout=180)
+
+            verify_lifecycle(checkout, log, browser_checks)
+            verify_production(checkout, log)
     except (VerificationError, OSError, sqlite3.Error, subprocess.TimeoutExpired) as error:
         print(f"Starter verification failed: {log.redact(str(error))}", file=sys.stderr)
         return 1

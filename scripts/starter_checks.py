@@ -225,3 +225,60 @@ def verify_lifecycle(checkout, log, browser_check=None):
     finally:
         package_file.write_bytes(original)
     print("Development readiness, watching, occupied ports, interruption and failure verified.", flush=True)
+
+
+def verify_stylesheet_response(checkout, base_url):
+    from html.parser import HTMLParser
+    from urllib.parse import urljoin
+    from urllib.request import urlopen
+
+    class Stylesheets(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.links = []
+
+        def handle_starttag(self, tag, attributes):
+            attrs = dict(attributes)
+            if tag == "link" and "stylesheet" in attrs.get("rel", "").split():
+                self.links.append(attrs.get("href", ""))
+
+    with urlopen(base_url, timeout=10) as response:
+        document = response.read().decode("utf-8")
+    parser = Stylesheets()
+    parser.feed(document)
+    urls = [urljoin(base_url, href) for href in parser.links if "css/dist/styles.css" in href]
+    if len(urls) != 1:
+        raise VerificationError("The rendered homepage must load the compiled stylesheet once.")
+    with urlopen(urls[0], timeout=10) as response:
+        stylesheet = response.read()
+        if response.status != 200 or "text/css" not in response.headers.get("Content-Type", ""):
+            raise VerificationError("The compiled stylesheet is not served as CSS.")
+    if stylesheet != (checkout.root / "theme/static/css/dist/styles.css").read_bytes():
+        raise VerificationError("The stylesheet response differs from the real compiled asset.")
+
+
+def verify_production(checkout, log):
+    import secrets
+    secret = secrets.token_urlsafe(64)
+    log.secrets.append(secret)
+    environment = dict(checkout.environment, DJANGO_SECRET_KEY=secret, DJANGO_DEBUG="false",
+                       DJANGO_ALLOWED_HOSTS="app.example.com",
+                       DJANGO_CSRF_TRUSTED_ORIGINS="https://app.example.com",
+                       DJANGO_SECURE_HSTS_SECONDS="31536000",
+                       DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS="true",
+                       DJANGO_SECURE_HSTS_PRELOAD="true")
+    log.run("production-css", [checkout.python, "manage.py", "tailwind", "build"],
+            cwd=checkout.root, env=environment)
+    log.run("collectstatic", [checkout.python, "manage.py", "collectstatic", "--noinput"],
+            cwd=checkout.root, env=environment)
+    built = checkout.root / "theme/static/css/dist/styles.css"
+    collected = checkout.root / "staticfiles/css/dist/styles.css"
+    if not collected.is_file() or collected.read_bytes() != built.read_bytes():
+        raise VerificationError("Production collection did not preserve the compiled stylesheet.")
+    log.run("deployment-checks", [checkout.python, "manage.py", "check", "--deploy", "--fail-level", "WARNING"],
+            cwd=checkout.root, env=environment)
+    environment["PATH"] = ""
+    log.run("production-no-node", [checkout.python, "-c",
+            "from Project.wsgi import application; assert callable(application)"],
+            cwd=checkout.root, env=dict(environment, DJANGO_SETTINGS_MODULE="Project.settings"))
+    print("Production CSS collection, deployment checks and startup without Node verified.", flush=True)
