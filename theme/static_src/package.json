@@ -1,7 +1,7 @@
 {
-  "name": "theme",
-  "version": "3.6.0",
-  "description": "",
+  "name": "django-tailwind-daisyui-theme",
+  "version": "1.0.0",
+  "description": "Tailwind CSS and daisyUI assets for the Django starter",
   "scripts": {
     "start": "npm run dev",
     "build": "npm run build:clean && npm run build:tailwind",
@@ -10,20 +10,15 @@
     "dev": "cross-env NODE_ENV=development tailwindcss --postcss -i ./src/styles.css -o ../static/css/dist/styles.css -w",
     "tailwindcss": "node ./node_modules/tailwindcss/lib/cli.js"
   },
-  "keywords": [],
-  "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.3",
-    "@tailwindcss/line-clamp": "^0.4.4",
-    "@tailwindcss/typography": "^0.5.9",
-    "cross-env": "^7.0.3",
-    "postcss": "^8.4.24",
-    "postcss-import": "^15.1.0",
-    "postcss-nested": "^6.0.1",
-    "postcss-simple-vars": "^7.0.1",
-    "rimraf": "^5.0.1",
-    "tailwindcss": "^3.3.2"
+    "@tailwindcss/cli": "4.3.3",
+    "daisyui": "5.7.47",
+    "tailwindcss": "4.3.3"
+  },
+  "private": true,
+  "engines": {
+    "node": "^22.10.0 || ^24.0.0",
+    "npm": ">=10 <12"
   }
 }
