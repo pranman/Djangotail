@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -143,6 +144,45 @@ def provision_python(layout: Layout, tools: Prerequisites) -> None:
              "-r", str(layout.root / "requirements-dev.txt")], cwd=layout.root)
 
 
+def provision_configuration(layout: Layout) -> None:
+    destination = layout.root / ".env"
+    if destination.exists() or destination.is_symlink():
+        if not destination.is_file():
+            raise BootstrapError(".env exists but is not a readable file. Fix it before setup.")
+        print("Keeping existing .env and its secret.")
+        return
+    template = (layout.root / ".env.example").read_text(encoding="utf-8")
+    content, count = re.subn(r"(?m)^DJANGO_SECRET_KEY=.*$",
+                            f"DJANGO_SECRET_KEY={secrets.token_urlsafe(50)}", template)
+    if count != 1:
+        raise BootstrapError(".env.example must contain exactly one DJANGO_SECRET_KEY setting.")
+    content, count = re.subn(r"(?m)^DJANGO_DEBUG=.*$", "DJANGO_DEBUG=True", content)
+    if count != 1:
+        raise BootstrapError(".env.example must contain exactly one DJANGO_DEBUG setting.")
+    try:
+        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        # Another setup may have written the file after our initial check.
+        print("Keeping .env created by another process.")
+        return
+    with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as config:
+        config.write(content)
+    print("Created .env with a unique local secret and debug enabled.")
+
+
+def provision_frontend(layout: Layout, tools: Prerequisites) -> None:
+    run([tools.npm, "ci"], cwd=layout.frontend)
+
+
+def setup(layout: Layout, tools: Prerequisites) -> None:
+    # Check all inputs before creating files or installing anything.
+    require_files(layout, (".env.example", "manage.py", "theme/static_src/package.json",
+                           "theme/static_src/package-lock.json"))
+    provision_python(layout, tools)
+    provision_configuration(layout)
+    provision_frontend(layout, tools)
+
+
 def diagnostics(layout: Layout, tools: Prerequisites) -> None:
     print(f"Project: {layout.root}")
     print(f"Python: {sys.version_info.major}.{sys.version_info.minor}")
@@ -152,6 +192,10 @@ def diagnostics(layout: Layout, tools: Prerequisites) -> None:
         print("Managed .venv: compatible")
     else:
         print("Managed .venv: absent; run python bootstrap.py to create it")
+    print("Local .env: " + ("present (values hidden)" if (layout.root / ".env").is_file()
+                            else "absent; setup will create it"))
+    print("Frontend dependencies: " + ("present" if (layout.frontend / "node_modules").is_dir()
+                                       else "absent; setup will install them"))
     print("Prerequisites are supported. No project files were changed.")
 
 
@@ -172,7 +216,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "check":
             diagnostics(layout, tools)
         elif args.command == "setup":
-            provision_python(layout, tools)
+            setup(layout, tools)
         else:
             raise BootstrapError("Development supervision is not implemented yet.")
     except BootstrapError as exc:
