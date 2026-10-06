@@ -6,6 +6,10 @@ The [Verify starter workflow](https://github.com/pranman/django-tailwind-daisyui
 
 Use a supported Python (3.12–3.14), Node.js (22.10+ within 22, or 24), and npm (10 or 11). Install uv to exercise the uv route. These commands do not change your working project's environment, configuration, database, or stylesheet:
 
+Run checkout verification from a Git checkout with Git on PATH: the verifier uses
+`git ls-files` to copy tracked source. The public bootstrap commands also work
+from an extracted source archive and do not require Git.
+
 ```bash
 python scripts/verify_starter.py --installer uv --cold
 python scripts/verify_starter.py --installer pip --cold
