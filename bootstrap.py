@@ -55,7 +55,7 @@ def run(command: list[str], *, cwd: Path = ROOT, capture: bool = False,
         env: dict[str, str] | None = None) -> str:
     """Run one command without a shell, stopping at the first failure."""
     if not capture:
-        print(f"→ {' '.join(command)}", flush=True)
+        print(f"> {' '.join(command)}", flush=True)
     try:
         result = subprocess.run(command, cwd=cwd, check=True, text=True, env=env,
                                 stdout=subprocess.PIPE if capture else None,
@@ -122,9 +122,12 @@ def prerequisites(installer: str = "auto", *, layout: Layout = Layout()) -> Prer
         raise BootstrapError(f"Node.js {node_version} is unsupported. Use Node.js 22.10+ or 24 LTS.")
     override = npm_override(layout)
     if override:
-        override = str(Path(override).expanduser())
-    if override and not Path(override).is_absolute() and ("/" in override or "\\" in override):
-        override = str(layout.root / override)
+        path = Path(override).expanduser()
+        # Path normalizes away './', so preserve that explicit path intent before
+        # deciding whether an override is a bare executable to find on PATH.
+        if not path.is_absolute() and (os.path.dirname(override) or path.parent != Path(".")):
+            path = layout.root / path
+        override = str(path)
     npm = shutil.which(override or "npm")
     if not npm:
         raise BootstrapError("npm is missing or NPM_BIN_PATH is invalid. Install npm 10 or "
@@ -164,7 +167,7 @@ def validate_environment(layout: Layout) -> None:
         valid = False
     if not valid:
         raise BootstrapError(".venv is incompatible or damaged. Move it aside and rerun with "
-                             "Python 3.12–3.14. Bootstrap will not delete an existing environment.")
+                             "Python 3.12-3.14. Bootstrap will not delete an existing environment.")
 
 
 def provision_python(layout: Layout, tools: Prerequisites) -> None:
@@ -308,7 +311,7 @@ class ManagedProcess:
 
 
 def start_process(name: str, command: list[str], cwd: Path) -> ManagedProcess:
-    print(f"Starting {name}…", flush=True)
+    print(f"Starting {name}...", flush=True)
     if os.name != "nt":
         return ManagedProcess(name, subprocess.Popen(command, cwd=cwd, start_new_session=True))
     # Gate the wrapper on stdin so it cannot spawn anything until its Job Object
@@ -480,6 +483,11 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Redirected Windows streams can use legacy encodings. Keep diagnostics
+    # usable even when a project path contains characters that cannot be encoded.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="backslashreplace")
     if (sys.argv[1:] if argv is None else argv) == ["_child"]:
         return child_wrapper()
     args = parser().parse_args(argv)
