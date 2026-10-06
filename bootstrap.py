@@ -71,6 +71,43 @@ def run(command: list[str], *, cwd: Path = ROOT, capture: bool = False,
     return result.stdout.strip() if capture else ""
 
 
+def npm_override(layout: Layout) -> str | None:
+    """Read the optional literal npm path without needing python-dotenv installed."""
+    if "NPM_BIN_PATH" in os.environ:
+        value = os.environ["NPM_BIN_PATH"]
+        if not value.strip():
+            raise BootstrapError("NPM_BIN_PATH must not be blank. Remove it to discover npm on PATH.")
+        return value
+    config = layout.root / ".env"
+    if not config.is_file():
+        return None
+    value = None
+    for line in config.read_text(encoding="utf-8").splitlines():
+        match = re.match(r"^\s*(?:export\s+)?NPM_BIN_PATH\s*=\s*(.*)$", line)
+        if match:
+            value = match.group(1).strip()
+            if value.startswith(("'", '"')):
+                quote = value[0]
+                quoted = re.match(r"^(['\"])((?:\\.|[^\\])*?)\1\s*(?:#.*)?$", value)
+                if quoted is None:
+                    raise BootstrapError("NPM_BIN_PATH in .env has invalid quoting.")
+                value = quoted.group(2)
+                escapes = {"\\": "\\", "'": "'"}
+                if quote == '"':
+                    escapes.update({'"': '"', "a": "\a", "b": "\b", "f": "\f",
+                                    "n": "\n", "r": "\r", "t": "\t", "v": "\v"})
+                value = re.sub(r"\\(.)", lambda m: escapes.get(m.group(1), m.group(0)), value)
+            else:
+                value = re.split(r"\s+#", value, maxsplit=1)[0].strip()
+    if value is not None:
+        if not value.strip():
+            raise BootstrapError("NPM_BIN_PATH must not be blank. Remove it to discover npm on PATH.")
+        if "${" in value:
+            raise BootstrapError("Use a literal NPM_BIN_PATH in .env, or export its resolved path "
+                                 "before bootstrap; interpolation requires installed dependencies.")
+    return value
+
+
 def prerequisites(installer: str = "auto", *, layout: Layout = Layout()) -> Prerequisites:
     if sys.version_info[:2] not in SUPPORTED_PYTHON:
         raise BootstrapError("Use Python 3.12, 3.13, or 3.14 to run bootstrap.py.")
@@ -83,11 +120,15 @@ def prerequisites(installer: str = "auto", *, layout: Layout = Layout()) -> Prer
     version = tuple(map(int, match.groups())) if match else ()
     if not version or version[0] not in SUPPORTED_NODE or version < (22, 10, 0):
         raise BootstrapError(f"Node.js {node_version} is unsupported. Use Node.js 22.10+ or 24 LTS.")
-    npm_override = os.environ.get("NPM_BIN_PATH")
-    npm = shutil.which(npm_override or "npm")
+    override = npm_override(layout)
+    if override:
+        override = str(Path(override).expanduser())
+    if override and not Path(override).is_absolute() and ("/" in override or "\\" in override):
+        override = str(layout.root / override)
+    npm = shutil.which(override or "npm")
     if not npm:
         raise BootstrapError("npm is missing or NPM_BIN_PATH is invalid. Install npm 10 or "
-                             "newer with Node.js and check PATH.")
+                             "11 with Node.js and check PATH.")
     npm_version = run([npm, "--version"], cwd=layout.root, capture=True)
     match = re.match(r"^(\d+)\.", npm_version)
     if not match or not 10 <= int(match.group(1)) < 12:
@@ -143,6 +184,11 @@ def provision_python(layout: Layout, tools: Prerequisites) -> None:
         run([str(tools.uv), "sync", "--frozen", "--project", str(layout.root),
              "--python", str(layout.python)], cwd=layout.root, env=env)
     else:
+        try:
+            run([str(layout.python), "-m", "pip", "--version"], cwd=layout.root, capture=True)
+        except BootstrapError:
+            # Environments created with `uv sync` may deliberately omit pip.
+            run([str(layout.python), "-m", "ensurepip", "--upgrade"], cwd=layout.root)
         run([str(layout.python), "-m", "pip", "install", "--require-hashes",
              "-r", str(layout.root / "requirements-dev.txt")], cwd=layout.root)
 
@@ -317,19 +363,30 @@ def stop_processes(processes: list[ManagedProcess], grace: float = 5.0) -> None:
 def supervise(commands: list[tuple[str, list[str], Path]]) -> None:
     children: list[ManagedProcess] = []
     previous_term = signal.getsignal(signal.SIGTERM)
+    previous_int = signal.getsignal(signal.SIGINT)
+    previous_break = signal.getsignal(signal.SIGBREAK) if os.name == "nt" else None
+    stopping = False
 
     def interrupted(signum: int, frame: object) -> None:
-        raise KeyboardInterrupt
+        nonlocal stopping
+        stopping = True
 
     signal.signal(signal.SIGTERM, interrupted)
+    signal.signal(signal.SIGINT, interrupted)
+    if os.name == "nt":
+        signal.signal(signal.SIGBREAK, interrupted)
     try:
         for name, command, cwd in commands:
+            if stopping:
+                raise KeyboardInterrupt
             try:
                 children.append(start_process(name, command, cwd))
             except OSError as exc:
                 raise BootstrapError(f"Cannot start {name}: {exc}") from exc
         print("Development processes are running. Press Ctrl+C to stop both.", flush=True)
         while True:
+            if stopping:
+                raise KeyboardInterrupt
             for child in children:
                 code = child.process.poll()
                 if code is not None:
@@ -337,20 +394,26 @@ def supervise(commands: list[tuple[str, list[str], Path]]) -> None:
             time.sleep(0.1)
     finally:
         # A second Ctrl+C must not interrupt cleanup and leave managed descendants.
-        previous_int = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        if os.name == "nt":
+            signal.signal(signal.SIGBREAK, signal.SIG_IGN)
         try:
             stop_processes(children)
         finally:
             signal.signal(signal.SIGINT, previous_int)
             signal.signal(signal.SIGTERM, previous_term)
+            if os.name == "nt":
+                signal.signal(signal.SIGBREAK, previous_break)
 
 
 def ensure_port_available(host: str, port: int) -> None:
     family = socket.AF_INET6 if ":" in host else socket.AF_INET
     try:
         with socket.socket(family, socket.SOCK_STREAM) as probe:
-            if os.name != "nt":
+            if os.name == "nt":
+                probe.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            else:
                 probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             probe.bind((host, port))
     except OSError as exc:
@@ -399,6 +462,9 @@ def diagnostics(layout: Layout, tools: Prerequisites) -> None:
                             else "absent; setup will create it"))
     print("Frontend dependencies: " + ("present" if (layout.frontend / "node_modules").is_dir()
                                        else "absent; setup will install them"))
+    if layout.python.is_file() and (layout.root / ".env").is_file():
+        run([str(layout.python), "-B", "manage.py", "check"], cwd=layout.root, capture=True)
+        print("Django configuration: valid")
     print("Prerequisites are supported. No project files were changed.")
 
 
@@ -430,6 +496,9 @@ def main(argv: list[str] | None = None) -> int:
             dev(layout, tools, args.host, args.port)
     except BootstrapError as exc:
         print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print(f"Error: {exc}. Check file permissions and rerun the same command.", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
         print("\nInterrupted. You can safely rerun the same command.", file=sys.stderr)
