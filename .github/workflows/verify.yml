@@ -1,0 +1,93 @@
+name: Verify starter
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  starter:
+    name: Starter (${{ matrix.id }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: linux-py312-node22-uv
+            os: ubuntu-24.04
+            python: '3.12'
+            node: '22'
+            installer: uv
+            arguments: --cold
+          - id: linux-py314-node24-pip-browser
+            os: ubuntu-24.04
+            python: '3.14'
+            node: '24'
+            installer: pip
+            arguments: --cold --browser
+          - id: macos-py313-node24-uv
+            os: macos-15
+            python: '3.13'
+            node: '24'
+            installer: uv
+            arguments: ''
+          - id: windows-py313-node22-pip
+            os: windows-2025
+            python: '3.13'
+            node: '22'
+            installer: pip
+            arguments: ''
+    steps:
+      - name: Check out the tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: '0.12.6'
+          enable-cache: false
+      - name: Check dependency lock and pip exports
+        if: matrix.id == 'linux-py312-node22-uv'
+        run: python scripts/check_dependencies.py --exports-only
+      - name: Verify public setup, development and deployment workflows
+        run: python scripts/verify_starter.py --installer ${{ matrix.installer }} ${{ matrix.arguments }} --artifacts verification-artifacts
+      - name: Retain safe verification diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: starter-${{ matrix.id }}
+          path: verification-artifacts/
+          retention-days: 7
+          if-no-files-found: warn
+
+  required:
+    name: Starter verification
+    if: always()
+    needs: [starter]
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+      - name: Require every supported workflow lane
+        env:
+          MATRIX_RESULT: ${{ needs.starter.result }}
+        run: test "$MATRIX_RESULT" = success

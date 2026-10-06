@@ -76,3 +76,6 @@ coverage.xml
 # Browser verification artifacts
 test-results/
 playwright-report/
+
+# Disposable workflow diagnostics
+verification-artifacts/
