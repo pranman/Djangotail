@@ -20,5 +20,10 @@
   "engines": {
     "node": "^22.10.0 || ^24.0.0",
     "npm": ">=10 <12"
+  },
+  "overrides": {
+    "@tailwindcss/cli": {
+      "@parcel/watcher": "2.5.6"
+    }
   }
 }

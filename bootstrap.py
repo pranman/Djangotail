@@ -223,7 +223,9 @@ def provision_configuration(layout: Layout) -> None:
 
 
 def provision_frontend(layout: Layout, tools: Prerequisites) -> None:
-    run([tools.npm, "ci"], cwd=layout.frontend)
+    # The compiler lives in devDependencies even when it builds production CSS.
+    # Explicit inclusion also overrides inherited NODE_ENV=production/omit=dev.
+    run([tools.npm, "ci", "--include=dev"], cwd=layout.frontend)
 
 
 def finish_setup(layout: Layout, tools: Prerequisites) -> None:
