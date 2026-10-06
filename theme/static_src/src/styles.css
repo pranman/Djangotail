@@ -1,3 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source(none);
+
+/* Paths are relative to this stylesheet, not the invoking shell. */
+@source "../../../templates/**/*.html";
+@source "../../../*/templates/**/*.html";
+@source "../../../*/static/**/*.js";
+
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, cupcake;
+}
+
+/* Match Tailwind dark: utilities to the theme selected in the demo. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
