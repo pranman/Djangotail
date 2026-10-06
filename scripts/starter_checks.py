@@ -201,6 +201,8 @@ def verify_lifecycle(checkout, log, browser_check=None):
                        "The public launcher's CSS watcher did not rebuild changed source.")
         finally:
             source.write_bytes(original)
+        wait_until(lambda: "--starter-watch-check" not in compiled.read_text(encoding="utf-8"),
+                   "The CSS watcher did not restore the original compiled stylesheet.")
         if browser_check is not None:
             browser_check(base_url)
 
