@@ -6,18 +6,24 @@ This directory is the only npm project. Use a current patch release of Node.js
 From the repository root:
 
 ```sh
-npm --prefix theme/static_src ci
+npm --prefix theme/static_src ci --include=dev
 npm --prefix theme/static_src run build
 npm --prefix theme/static_src start
 ```
 
-`ci` installs the committed lockfile. `build` emits minified production CSS;
+`ci --include=dev` installs the committed lockfile, including the Tailwind and
+daisyUI build tools declared in `devDependencies`. Keep that flag in production
+build stages too: `NODE_ENV=production` or `npm_config_omit=dev` would otherwise
+omit the compiler. These build dependencies are not needed to serve collected
+CSS from the deployed application.
+
+`build` emits minified production CSS;
 `start` watches CSS and template edits, including when launched with closed stdin.
 Stop the watcher with Ctrl+C. CSS rebuilding is separate from browser refreshing.
 
 With the Python environment installed, `python manage.py tailwind build` and
 `python manage.py tailwind start` run those same npm scripts in this directory.
-The Django integration's `tailwind install` uses `npm install`; use `npm ci` for
+The Django integration's `tailwind install` uses `npm install`; use `npm ci --include=dev` for
 reproducible installs. Set `NPM_BIN_PATH` only when npm is not on your PATH.
 
 Both development and production write `theme/static/css/dist/styles.css`, which

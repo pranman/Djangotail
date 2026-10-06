@@ -248,6 +248,13 @@ class BootstrapTests(unittest.TestCase):
             bootstrap.setup(self.layout, self.tools)
         self.assertEqual(original, (self.layout.root / ".env").read_bytes())
 
+    def test_frontend_installs_build_tools_with_inherited_production_environment(self):
+        with patch.dict(os.environ, {"NODE_ENV": "production", "npm_config_omit": "dev"}), \
+             patch.object(bootstrap, "run") as run:
+            bootstrap.provision_frontend(self.layout, self.tools)
+            self.assertEqual(os.environ["NODE_ENV"], "production")
+        run.assert_called_once_with([self.tools.npm, "ci", "--include=dev"], cwd=self.layout.frontend)
+
     def test_migration_failure_never_builds_or_prints_success(self):
         self.inputs()
         output = io.StringIO()
