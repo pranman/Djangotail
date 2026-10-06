@@ -9,6 +9,8 @@ import threading
 import unittest
 from unittest.mock import Mock, patch
 
+from tests.fixtures.development_readiness import LoopbackHTTPServer
+
 from scripts.starter_checks import (
     VerificationError, wait_for_development_ready, wait_until, watcher_initial_build_complete,
 )
@@ -48,7 +50,18 @@ class DevelopmentReadinessTests(unittest.TestCase):
                                        stdout=output, stderr=subprocess.STDOUT)
         self.addCleanup(self.stop_fixture, process)
         address = self.directory / "address.json"
-        wait_until(address.exists, "HTTP fixture did not start", timeout=5)
+        def published_address():
+            if address.exists():
+                return True
+            code = process.poll()
+            if code is not None:
+                raise VerificationError(f"HTTP fixture exited before startup (code {code}).")
+            return False
+
+        try:
+            wait_until(published_address, "HTTP fixture did not start", timeout=5)
+        except VerificationError as error:
+            self.fail(f"{error}\nFixture output:\n{self.logfile.read_text(encoding='utf-8', errors='replace')}")
         return process, json.loads(address.read_text())["url"]
 
     @staticmethod
@@ -56,6 +69,13 @@ class DevelopmentReadinessTests(unittest.TestCase):
         if process.poll() is None:
             process.terminate()
         process.wait(timeout=5)
+
+    def test_loopback_fixture_does_not_depend_on_reverse_dns(self):
+        from http.server import BaseHTTPRequestHandler
+        with patch("socket.getfqdn", side_effect=AssertionError("Unexpected reverse DNS lookup")):
+            with LoopbackHTTPServer(("127.0.0.1", 0), BaseHTTPRequestHandler) as server:
+                self.assertEqual(server.server_name, "127.0.0.1")
+                self.assertGreater(server.server_port, 0)
 
     def test_http_first_and_noop_callback_wait_for_the_delayed_initial_build(self):
         process, url = self.start_fixture()
