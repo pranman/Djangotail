@@ -6,7 +6,14 @@
 @source "../../../*/static/**/*.js";
 
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark, cupcake;
+  themes: light --default, cupcake;
+}
+
+/* Inherit the dark palette and raise small primary-text contrast to WCAG AA. */
+@plugin "daisyui/theme" {
+  name: "dark";
+  prefersdark: true;
+  --color-primary-content: #fff;
 }
 
 /* Match Tailwind dark: utilities to the theme selected in the demo. */

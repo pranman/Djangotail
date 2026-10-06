@@ -12,6 +12,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "django-browser-reload>=1.21,<2",
+    "playwright>=1.58,<2",
 ]
 
 [tool.uv]

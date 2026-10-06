@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
     <meta name="description" content="A Django starter template with Tailwind CSS, daisyUI components, and three working themes.">
     <title>{% block title %}Django + Tailwind CSS + daisyUI Starter Template{% endblock %}</title>
     <script src="{% static 'MainApp/js/demo.js' %}"></script>
@@ -14,7 +15,7 @@
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-base-100 focus:p-3 focus:text-base-content">Skip to content</a>
     <header class="border-b border-base-300">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5">
-            <a href="{% url 'home' %}" class="flex min-w-0 max-w-full items-center gap-3 text-sm font-semibold sm:text-base" aria-label="Starter template home">
+            <a href="{% url 'home' %}" class="flex min-w-0 max-w-full items-center gap-3 text-sm font-semibold sm:text-base">
                 <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-lg text-primary-content" aria-hidden="true">d.</span>
                 <span class="min-w-0">Django <span class="font-normal">+ Tailwind CSS + daisyUI</span></span>
             </a>

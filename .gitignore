@@ -72,3 +72,7 @@ coverage.xml
 
 # SQLite database
 *.sqlite3
+
+# Browser verification artifacts
+test-results/
+playwright-report/
