@@ -13,6 +13,7 @@
     const selector = document.getElementById("theme-select");
     if (selector) {
       selector.value = theme;
+      selector.disabled = false;
       selector.addEventListener("change", () => {
         if (!themes.has(selector.value)) return;
         document.documentElement.dataset.theme = selector.value;
@@ -32,6 +33,7 @@
         heading.textContent = name ? `Hello, ${name}.` : "Hello, maker.";
       });
       form.addEventListener("reset", () => { heading.textContent = "Hello, maker."; });
+      form.querySelector("fieldset").disabled = false;
     }
   });
 })();

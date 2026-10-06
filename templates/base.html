@@ -11,11 +11,12 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen bg-base-100 text-base-content antialiased">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-base-100 focus:p-3 focus:text-base-content">Skip to content</a>
     <header class="border-b border-base-300">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5">
-            <a href="{% url 'home' %}" class="flex items-center gap-3 font-semibold" aria-label="Starter template home">
-                <span class="grid h-10 w-10 place-items-center rounded-xl bg-primary text-lg text-primary-content" aria-hidden="true">d.</span>
-                <span>Django <span class="font-normal">+ Tailwind CSS + daisyUI</span></span>
+            <a href="{% url 'home' %}" class="flex min-w-0 max-w-full items-center gap-3 text-sm font-semibold sm:text-base" aria-label="Starter template home">
+                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-lg text-primary-content" aria-hidden="true">d.</span>
+                <span class="min-w-0">Django <span class="font-normal">+ Tailwind CSS + daisyUI</span></span>
             </a>
             <nav aria-label="Main navigation" class="flex items-center gap-6 text-sm font-medium">
                 <a href="#components" class="link link-hover">Components</a>
@@ -23,7 +24,7 @@
             </nav>
         </div>
     </header>
-    <main id="main-content" class="mx-auto max-w-6xl px-6">
+    <main id="main-content" tabindex="-1" class="mx-auto max-w-6xl px-6">
         {% block content %}{% endblock %}
     </main>
     <footer class="mt-16 border-t border-base-300">
