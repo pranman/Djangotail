@@ -28,6 +28,8 @@ A Django starter template with Tailwind CSS, daisyUI components, one-command set
 
 Use it as a starting point for a Django application with server-rendered templates and a local CSS build.
 
+![Django starter showing Tailwind layout, daisyUI components, and the theme playground](docs/images/starter-preview.png)
+
 ## Features <a name="features"></a>
 
 - **Django Integration**: Full Django framework with best practices
