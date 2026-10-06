@@ -4,11 +4,9 @@
   "description": "Tailwind CSS and daisyUI assets for the Django starter",
   "scripts": {
     "start": "npm run dev",
-    "build": "npm run build:clean && npm run build:tailwind",
-    "build:clean": "rimraf ../static/css/dist",
-    "build:tailwind": "cross-env NODE_ENV=production tailwindcss --postcss -i ./src/styles.css -o ../static/css/dist/styles.css --minify",
-    "dev": "cross-env NODE_ENV=development tailwindcss --postcss -i ./src/styles.css -o ../static/css/dist/styles.css -w",
-    "tailwindcss": "node ./node_modules/tailwindcss/lib/cli.js"
+    "build": "tailwindcss -i ./src/styles.css -o ../static/css/dist/styles.css --minify",
+    "dev": "tailwindcss -i ./src/styles.css -o ../static/css/dist/styles.css --watch=always",
+    "tailwindcss": "tailwindcss"
   },
   "license": "MIT",
   "devDependencies": {
