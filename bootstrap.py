@@ -174,6 +174,12 @@ def provision_frontend(layout: Layout, tools: Prerequisites) -> None:
     run([tools.npm, "ci"], cwd=layout.frontend)
 
 
+def finish_setup(layout: Layout, tools: Prerequisites) -> None:
+    run([str(layout.python), "manage.py", "migrate", "--noinput"], cwd=layout.root)
+    run([tools.npm, "run", "build"], cwd=layout.frontend)
+    run([str(layout.python), "manage.py", "check"], cwd=layout.root)
+
+
 def setup(layout: Layout, tools: Prerequisites) -> None:
     # Check all inputs before creating files or installing anything.
     require_files(layout, (".env.example", "manage.py", "theme/static_src/package.json",
@@ -181,6 +187,8 @@ def setup(layout: Layout, tools: Prerequisites) -> None:
     provision_python(layout, tools)
     provision_configuration(layout)
     provision_frontend(layout, tools)
+    finish_setup(layout, tools)
+    print("\nSetup complete. Start development with: python bootstrap.py dev")
 
 
 def diagnostics(layout: Layout, tools: Prerequisites) -> None:
