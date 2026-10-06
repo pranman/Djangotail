@@ -37,3 +37,13 @@ def env_list(name):
             "or whitespace inside a value."
         )
     return values
+
+
+def env_required(name):
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        raise ImproperlyConfigured(
+            f"{name} is required. Set it in the environment or the project-root .env "
+            "file; use the root bootstrap script for local development."
+        )
+    return value

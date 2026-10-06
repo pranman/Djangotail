@@ -12,21 +12,17 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-from .configuration import load_environment
+from .configuration import env_bool, env_required, load_environment
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_environment(BASE_DIR)
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&z#6pp&e2wk5u%299o%4c2o-_2xv&3w!%df$_s+vlc8)n(5@_d'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Local development is opt-in; bootstrap writes a unique secret into .env.
+# Never commit a real secret or use the same key across deployments.
+SECRET_KEY = env_required('DJANGO_SECRET_KEY')
+DEBUG = env_bool('DJANGO_DEBUG', default=False)
 
 ALLOWED_HOSTS = []
 
