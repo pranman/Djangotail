@@ -38,6 +38,7 @@ Install these tools and make them available in your terminal:
 | [Node.js](https://nodejs.org/en/download) | 22.10 or newer in the 22 series, or 24 LTS |
 | npm | 10 or 11, normally supplied with Node.js |
 | [uv](https://docs.astral.sh/uv/getting-started/installation/) | Optional; setup uses pip when uv is absent |
+| [Git](https://git-scm.com/downloads) | Required for cloning and checkout verification; not for setup from a source archive |
 
 The supported platforms are Linux, macOS and Windows. `.python-version` selects
 Python 3.13 for uv; `.nvmrc` selects Node 24 for compatible version managers.
