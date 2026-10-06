@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-import os
 from django.core.exceptions import ImproperlyConfigured
 
 from .configuration import (
@@ -21,6 +20,7 @@ from .configuration import (
     env_nonnegative_int,
     env_required,
     load_environment,
+    npm_executable,
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -160,4 +160,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Tailwind configuration
 TAILWIND_APP_NAME = 'theme'
-NPM_BIN_PATH = os.getenv('NPM_BIN_PATH')
+NPM_BIN_PATH = npm_executable(BASE_DIR)
