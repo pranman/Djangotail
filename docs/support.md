@@ -46,6 +46,31 @@ Security problems belong in the [private reporting route](../SECURITY.md), not a
 public bug report. Support is best effort; no response-time commitment or
 individual deployment support is promised.
 
+## Dependency maintenance
+
+[Dependabot configuration](../.github/dependabot.yml) checks the root uv project,
+`theme/static_src` npm project, and GitHub Actions monthly. Minor and patch
+updates are grouped by ecosystem; major updates remain separate. Each ecosystem
+has a limit of three open version-update PRs. Updates require review and passing
+CI; this configuration does not enable automatic merging.
+
+The `uv` ecosystem is supported by
+[Dependabot](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference)
+and maintains `uv.lock`, as described in
+[Astral's integration guide](https://docs.astral.sh/uv/guides/integration/dependabot/).
+The hashed `requirements.txt` and `requirements-dev.txt` files are generated
+exports, not independent manifests to update with a second pip bot. After each
+Python update, regenerate both exports using the commands in
+[dependency maintenance](dependencies.md) and commit them on that update's PR.
+Run `python scripts/check_dependencies.py --exports-only` before the full CI
+gate. An export mismatch must block the update until corrected.
+
+Frontend updates must commit `package.json` and `package-lock.json` together and
+pass `npm ci`, the CSS build, and browser checks. Keep GitHub Actions pinned as
+specified by the workflow; review action changes and rerun the full matrix.
+Changes to the documented runtime ranges or framework major/LTS line need a
+tracked requirement, matching documentation, and validation before merge.
+
 ## License
 
 The starter preserves the existing choice of the [MIT license](../LICENSE) or
