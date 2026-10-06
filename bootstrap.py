@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import json
 import os
 from pathlib import Path
 import re
@@ -46,12 +47,13 @@ class Prerequisites:
     uv: str | None
 
 
-def run(command: list[str], *, cwd: Path = ROOT, capture: bool = False) -> str:
+def run(command: list[str], *, cwd: Path = ROOT, capture: bool = False,
+        env: dict[str, str] | None = None) -> str:
     """Run one command without a shell, stopping at the first failure."""
     if not capture:
         print(f"→ {' '.join(command)}", flush=True)
     try:
-        result = subprocess.run(command, cwd=cwd, check=True, text=True,
+        result = subprocess.run(command, cwd=cwd, check=True, text=True, env=env,
                                 stdout=subprocess.PIPE if capture else None,
                                 stderr=subprocess.PIPE if capture else None)
     except FileNotFoundError as exc:
@@ -73,9 +75,10 @@ def prerequisites(installer: str = "auto", *, layout: Layout = Layout()) -> Prer
         raise BootstrapError("Node.js is missing. Install Node.js LTS 22 or 24, reopen your "
                              "terminal, and rerun this command.")
     node_version = run([node, "--version"], cwd=layout.root, capture=True)
-    match = re.match(r"^v?(\d+)\.", node_version)
-    if not match or int(match.group(1)) not in SUPPORTED_NODE:
-        raise BootstrapError(f"Node.js {node_version} is unsupported. Use Node.js LTS 22 or 24.")
+    match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)", node_version)
+    version = tuple(map(int, match.groups())) if match else ()
+    if not version or version[0] not in SUPPORTED_NODE or version < (22, 10, 0):
+        raise BootstrapError(f"Node.js {node_version} is unsupported. Use Node.js 22.10+ or 24 LTS.")
     npm_override = os.environ.get("NPM_BIN_PATH")
     npm = shutil.which(npm_override or "npm")
     if not npm:
@@ -83,8 +86,8 @@ def prerequisites(installer: str = "auto", *, layout: Layout = Layout()) -> Prer
                              "newer with Node.js and check PATH.")
     npm_version = run([npm, "--version"], cwd=layout.root, capture=True)
     match = re.match(r"^(\d+)\.", npm_version)
-    if not match or int(match.group(1)) < 10:
-        raise BootstrapError(f"npm {npm_version} is unsupported. Use npm 10 or newer.")
+    if not match or not 10 <= int(match.group(1)) < 12:
+        raise BootstrapError(f"npm {npm_version} is unsupported. Use npm 10 or 11.")
     uv = shutil.which("uv")
     if installer == "uv" and not uv:
         raise BootstrapError("uv was requested but is missing. Install uv or use --installer pip.")
@@ -92,10 +95,63 @@ def prerequisites(installer: str = "auto", *, layout: Layout = Layout()) -> Prer
     return Prerequisites(npm=npm, installer=selected, uv=uv)
 
 
+def require_files(layout: Layout, filenames: tuple[str, ...]) -> None:
+    for filename in filenames:
+        if not (layout.root / filename).is_file():
+            raise BootstrapError(f"Required project file {filename} is missing. "
+                                 "Restore it from the repository and rerun setup.")
+
+
+def validate_environment(layout: Layout) -> None:
+    """Refuse partial, moved, or incompatible environments without destroying them."""
+    if not layout.python.is_file():
+        raise BootstrapError(".venv exists but its Python is missing. Move .venv aside, then "
+                             "rerun setup to create a new environment; existing data is preserved.")
+    probe = ("import json,sys; print(json.dumps({'version':list(sys.version_info[:2]),"
+             "'prefix':sys.prefix,'base_prefix':sys.base_prefix}))")
+    try:
+        info = json.loads(run([str(layout.python), "-I", "-c", probe],
+                              cwd=layout.root, capture=True))
+        valid = (tuple(info["version"]) in SUPPORTED_PYTHON
+                 and Path(info["prefix"]).resolve() == layout.environment.resolve()
+                 and info["prefix"] != info["base_prefix"])
+    except (BootstrapError, ValueError, KeyError, TypeError):
+        valid = False
+    if not valid:
+        raise BootstrapError(".venv is incompatible or damaged. Move it aside and rerun with "
+                             "Python 3.12–3.14. Bootstrap will not delete an existing environment.")
+
+
+def provision_python(layout: Layout, tools: Prerequisites) -> None:
+    if tools.installer == "uv":
+        require_files(layout, ("pyproject.toml", "uv.lock"))
+    else:
+        require_files(layout, ("requirements-dev.txt", "requirements.txt"))
+    if layout.environment.exists():
+        validate_environment(layout)
+    else:
+        # stdlib venv includes pip, so switching installers later remains possible.
+        run([sys.executable, "-m", "venv", str(layout.environment)], cwd=layout.root)
+        validate_environment(layout)
+    if tools.installer == "uv":
+        env = dict(os.environ, UV_PROJECT_ENVIRONMENT=str(layout.environment),
+                   UV_PYTHON_DOWNLOADS="never")
+        run([str(tools.uv), "sync", "--frozen", "--project", str(layout.root),
+             "--python", str(layout.python)], cwd=layout.root, env=env)
+    else:
+        run([str(layout.python), "-m", "pip", "install", "--require-hashes",
+             "-r", str(layout.root / "requirements-dev.txt")], cwd=layout.root)
+
+
 def diagnostics(layout: Layout, tools: Prerequisites) -> None:
     print(f"Project: {layout.root}")
     print(f"Python: {sys.version_info.major}.{sys.version_info.minor}")
     print(f"Installer: {tools.installer}")
+    if layout.environment.exists():
+        validate_environment(layout)
+        print("Managed .venv: compatible")
+    else:
+        print("Managed .venv: absent; run python bootstrap.py to create it")
     print("Prerequisites are supported. No project files were changed.")
 
 
@@ -115,8 +171,10 @@ def main(argv: list[str] | None = None) -> int:
         tools = prerequisites(args.installer, layout=layout)
         if args.command == "check":
             diagnostics(layout, tools)
+        elif args.command == "setup":
+            provision_python(layout, tools)
         else:
-            raise BootstrapError("Setup and development provisioning are not implemented yet.")
+            raise BootstrapError("Development supervision is not implemented yet.")
     except BootstrapError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
