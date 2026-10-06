@@ -180,7 +180,10 @@ def wait_for_development_ready(process, base_url, logfile, *, timeout=60):
                 http_ready = response.status == 200
         except (URLError, TimeoutError):
             http_ready = False
-        if http_ready and watcher_ready and process.poll() is None:
+        if http_ready and watcher_ready:
+            code = process.poll()
+            if code is not None:
+                raise VerificationError(f"Development launcher exited before readiness (code {code}); see development.log.")
             return
         time.sleep(0.05)
     missing = []
