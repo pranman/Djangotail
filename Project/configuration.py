@@ -90,7 +90,7 @@ def csrf_origins():
 
 
 def npm_executable(base_dir):
-    """Resolve npm lazily: Django can serve prebuilt CSS without Node installed."""
+    """Find npm without running it, so prebuilt CSS needs no Node installation."""
     if "NPM_BIN_PATH" in os.environ:
         override = env_required("NPM_BIN_PATH")
         path = Path(override).expanduser()
@@ -98,7 +98,7 @@ def npm_executable(base_dir):
         # repository, matching .env loading regardless of the caller's directory.
         if path.is_absolute():
             return str(path)
-        if path.parent != Path("."):
+        if os.path.dirname(override) or path.parent != Path("."):
             return str(base_dir / path)
         return override
     executable = "npm.cmd" if os.name == "nt" else "npm"
