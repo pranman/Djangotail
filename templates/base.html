@@ -4,8 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Django with Tailwind CSS{% endblock %}</title>
+    <title>{% block title %}Django + Tailwind CSS + daisyUI Starter Template{% endblock %}</title>
     <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen flex flex-col">
     <header class="bg-primary text-primary-content p-4 shadow-md">
@@ -30,5 +31,6 @@
             <p>&copy; {% now "Y" %} Django Tailwind Project</p>
         </div>
     </footer>
+    {% block scripts %}{% endblock %}
 </body>
-</html> 
+</html>
