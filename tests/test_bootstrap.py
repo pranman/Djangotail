@@ -123,6 +123,29 @@ class BootstrapTests(unittest.TestCase):
             bootstrap.prerequisites(layout=self.layout)
         which.assert_any_call(str(self.layout.root / "tools with spaces/npm"))
 
+    def test_dot_relative_npm_resolves_from_project_when_called_elsewhere(self):
+        caller = self.layout.root / "unrelated cwd"
+        caller.mkdir()
+        for override in ("./npm", "./npm with spaces", "./tools with spaces/npm"):
+            self.write(".env", f'NPM_BIN_PATH="{override}"\n')
+            with self.subTest(override=override), contextlib.chdir(caller), \
+                 patch.dict(os.environ, {}, clear=True), \
+                 patch.object(bootstrap.sys, "version_info", (3, 13, 0)), \
+                 patch.object(bootstrap.shutil, "which", side_effect=lambda name: name), \
+                 patch.object(bootstrap, "run", side_effect=["v24.0.0", "11.0.0"]):
+                result = bootstrap.prerequisites(layout=self.layout)
+            self.assertEqual(result.npm, str(self.layout.root / override))
+
+    def test_home_relative_npm_preserves_expansion_and_spaces(self):
+        override = "~/tools with spaces/npm"
+        self.write(".env", f'NPM_BIN_PATH="{override}"\n')
+        with patch.dict(os.environ, {"NPM_BIN_PATH": override}), \
+             patch.object(bootstrap.sys, "version_info", (3, 13, 0)), \
+             patch.object(bootstrap.shutil, "which", side_effect=lambda name: name), \
+             patch.object(bootstrap, "run", side_effect=["v24.0.0", "11.0.0"]):
+            result = bootstrap.prerequisites(layout=self.layout)
+            self.assertEqual(result.npm, str(Path(override).expanduser()))
+
     def test_missing_inputs_do_not_create_environment(self):
         with self.assertRaisesRegex(bootstrap.BootstrapError, "Required project file"):
             bootstrap.setup(self.layout, self.tools)
@@ -259,6 +282,29 @@ class BootstrapTests(unittest.TestCase):
             bootstrap.run(command, cwd=self.layout.root)
         self.assertEqual(run.call_args.args, (command,))
         self.assertNotIn("shell", run.call_args.kwargs)
+
+    def test_cli_output_survives_ascii_and_legacy_windows_streams(self):
+        for encoding in ("ascii", "cp1252"):
+            output_bytes = io.BytesIO()
+            error_bytes = io.BytesIO()
+            output = io.TextIOWrapper(output_bytes, encoding=encoding, write_through=True)
+            errors = io.TextIOWrapper(error_bytes, encoding=encoding, write_through=True)
+            command = ["/project-\u6d4b\u8bd5/python", "--version"]
+            with self.subTest(encoding=encoding), \
+                 patch.object(bootstrap.sys, "stdout", output), \
+                 patch.object(bootstrap.sys, "stderr", errors), \
+                 patch.object(bootstrap, "prerequisites", return_value=self.tools), \
+                 patch.object(bootstrap, "diagnostics", side_effect=lambda *args: bootstrap.run(command)), \
+                 patch.object(bootstrap.subprocess, "run", return_value=subprocess.CompletedProcess(command, 0)):
+                self.assertEqual(bootstrap.main(["check"]), 0)
+            self.assertIn(b"> /project-\\u6d4b\\u8bd5/python --version", output_bytes.getvalue())
+            with patch.object(bootstrap.sys, "stdout", output), \
+                 patch.object(bootstrap.sys, "stderr", errors), \
+                 patch.object(bootstrap, "prerequisites", side_effect=bootstrap.BootstrapError("Missing /project-\u6d4b\u8bd5/npm")):
+                self.assertEqual(bootstrap.main(["check"]), 1)
+            self.assertIn(b"Missing /project-\\u6d4b\\u8bd5/npm", error_bytes.getvalue())
+            output.close()
+            errors.close()
 
     def test_subprocess_failure_reports_exit_code_without_captured_secrets(self):
         with patch.object(bootstrap.subprocess, "run", side_effect=subprocess.CalledProcessError(
