@@ -4,13 +4,14 @@ This file records changes to the starter template. Applying a template update to
 an existing application requires reviewing its code, configuration, and data
 migrations; there is no automatic application upgrade command.
 
-## Unreleased — 0.1.0 candidate
+## 0.1.0 — 2026-10-06
 
-The first release remains gated by the
-[release checklist](docs/releasing.md) and
-[readiness issue #9](https://github.com/pranman/django-tailwind-daisyui-template/issues/9).
-These notes do not mean that a tag has been published or that an unfinished
-verification gate has passed.
+The first versioned source release refreshes the starter's setup, frontend,
+demo, documentation, and verification. The exact release commit, CI run, and
+source-archive verification evidence are recorded in
+[release issue #9](https://github.com/pranman/django-tailwind-daisyui-template/issues/9)
+and the [GitHub release](https://github.com/pranman/django-tailwind-daisyui-template/releases/tag/v0.1.0).
+The reusable publication procedure is in the [release guide](docs/releasing.md).
 
 ### Setup and development
 

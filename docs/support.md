@@ -23,8 +23,8 @@ your project, preserving its configuration and data.
 
 ## Getting help
 
-Run `python bootstrap.py check` from the repository root for prerequisite and
-configuration diagnostics. If it reports an unsupported runtime or missing
+Run `python bootstrap.py check` from the repository root for prerequisite,
+managed-environment, and setup-state diagnostics. If it reports an unsupported runtime or missing
 tool, install a supported version and reopen the terminal. Bootstrap does not
 install system Python or Node.js for you.
 
