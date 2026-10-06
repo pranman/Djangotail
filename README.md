@@ -13,6 +13,7 @@ Django + Tailwind CSS + daisyUI Starter Template
 <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js badge" /></a>
 </p>
 
+[Use this template](https://github.com/pranman/django-tailwind-daisyui-template/generate)&nbsp;•
 [Overview](#overview)&nbsp;•
 [Features](#features)&nbsp;•
 [Installation](#installation)&nbsp;•
@@ -42,8 +43,8 @@ Use it as a starting point for a Django application with server-rendered templat
 
 1. Clone this repository:
    ```bash
-   git clone <your-repository-url>
-   cd <project-directory>
+   git clone https://github.com/pranman/django-tailwind-daisyui-template.git
+   cd django-tailwind-daisyui-template
    ```
 
 2. Create a virtual environment and activate it:
