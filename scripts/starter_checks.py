@@ -93,6 +93,17 @@ class CommandLog:
     def write(self, name: str, text: str) -> None:
         (self.directory / f"{name}.log").write_text(self.redact(text), encoding="utf-8")
 
+    def sanitize(self, project: Path) -> None:
+        # Setup can fail after creating .env but before the caller learns its key.
+        # Re-scrub every diagnostic before the disposable fixture is removed.
+        config = project / ".env"
+        if config.is_file():
+            for line in config.read_text(encoding="utf-8").splitlines():
+                if line.startswith("DJANGO_SECRET_KEY="):
+                    self.secrets.append(line.partition("=")[2])
+        for filename in self.directory.rglob("*.log"):
+            filename.write_text(self.redact(filename.read_text(encoding="utf-8")), encoding="utf-8")
+
     def run(self, name: str, command, *, cwd: Path, env: dict[str, str], timeout: int = 900):
         print(f"[{name}] Running public workflow check", flush=True)
         result = subprocess.run([str(part) for part in command], cwd=cwd, env=env,
@@ -261,6 +272,7 @@ def verify_stylesheet_response(checkout, base_url):
 
 def verify_production(checkout, log):
     import secrets
+    import sys
     secret = secrets.token_urlsafe(64)
     log.secrets.append(secret)
     environment = dict(checkout.environment, DJANGO_SECRET_KEY=secret, DJANGO_DEBUG="false",
@@ -271,16 +283,26 @@ def verify_production(checkout, log):
                        DJANGO_SECURE_HSTS_PRELOAD="true")
     log.run("production-css", [checkout.python, "manage.py", "tailwind", "build"],
             cwd=checkout.root, env=environment)
-    log.run("collectstatic", [checkout.python, "manage.py", "collectstatic", "--noinput"],
+    runtime = checkout.root / ".venv-production"
+    runtime_python = runtime / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    log.run("production-environment", [sys.executable, "-m", "venv", runtime],
+            cwd=checkout.root, env=environment)
+    log.run("production-install", [runtime_python, "-m", "pip", "install", "--require-hashes",
+            "-r", "requirements.txt"], cwd=checkout.root, env=environment)
+    log.run("production-dependencies", [runtime_python, "-c",
+            "from importlib.util import find_spec; "
+            "assert find_spec('django_browser_reload') is None; "
+            "assert find_spec('playwright') is None"], cwd=checkout.root, env=environment)
+    log.run("collectstatic", [runtime_python, "manage.py", "collectstatic", "--noinput"],
             cwd=checkout.root, env=environment)
     built = checkout.root / "theme/static/css/dist/styles.css"
     collected = checkout.root / "staticfiles/css/dist/styles.css"
     if not collected.is_file() or collected.read_bytes() != built.read_bytes():
         raise VerificationError("Production collection did not preserve the compiled stylesheet.")
-    log.run("deployment-checks", [checkout.python, "manage.py", "check", "--deploy", "--fail-level", "WARNING"],
+    log.run("deployment-checks", [runtime_python, "manage.py", "check", "--deploy", "--fail-level", "WARNING"],
             cwd=checkout.root, env=environment)
     environment["PATH"] = ""
-    log.run("production-no-node", [checkout.python, "-c",
+    log.run("production-no-node", [runtime_python, "-c",
             "from Project.wsgi import application; assert callable(application)"],
             cwd=checkout.root, env=dict(environment, DJANGO_SETTINGS_MODULE="Project.settings"))
     print("Production CSS collection, deployment checks and startup without Node verified.", flush=True)

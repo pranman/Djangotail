@@ -40,3 +40,12 @@ class WorkflowFixtureTests(unittest.TestCase):
             log.secrets.append("generated-private-value")
             log.write("check", "Error: generated-private-value")
             self.assertEqual((Path(directory) / "check.log").read_text(), "Error: [redacted]")
+
+    def test_failure_diagnostics_scrub_a_secret_generated_before_setup_failed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            log = CommandLog(project / "diagnostics")
+            (project / ".env").write_text("DJANGO_SECRET_KEY=late-generated-secret\n")
+            (log.directory / "development.log").write_text("Error: late-generated-secret")
+            log.sanitize(project)
+            self.assertEqual((log.directory / "development.log").read_text(), "Error: [redacted]")
