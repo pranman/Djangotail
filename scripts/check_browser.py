@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 import secrets
 import shutil
-import signal
 import socket
 import subprocess
 import sys
@@ -23,17 +22,9 @@ from playwright.sync_api import expect, sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def stop_process(process):
-    if os.name == "nt":
-        if process.poll() is None:
-            subprocess.run(["taskkill", "/pid", str(process.pid), "/T", "/F"],
-                           check=True, capture_output=True, timeout=15)
-    else:
-        try:
-            os.killpg(process.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-    process.wait(timeout=15)
+# Share the launcher's process groups and gated Windows Job Object ownership.
+sys.path.insert(0, str(ROOT))
+import bootstrap
 
 
 @contextmanager
@@ -70,24 +61,22 @@ def isolated_server(artifacts):
                 ("server", ["runserver", f"127.0.0.1:{port}"]),
             ):
                 with (artifacts / f"{name}.log").open("w", encoding="utf-8") as log:
-                    processes.append(subprocess.Popen(
-                        [sys.executable, "manage.py", *command], cwd=project, env=env,
+                    processes.append(bootstrap.start_process(
+                        name, [sys.executable, "manage.py", *command], cwd=project, env=env,
                         stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
-                        start_new_session=os.name != "nt",
-                        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
                     ))
                 if name == "watcher":
                     for _ in range(150):
                         if "Done in" in (artifacts / "watcher.log").read_text(encoding="utf-8"):
                             break
-                        if processes[-1].poll() is not None:
+                        if processes[-1].process.poll() is not None:
                             raise RuntimeError("CSS watcher exited before its first build")
                         time.sleep(0.1)
                     else:
                         raise RuntimeError("CSS watcher did not finish its initial build")
             url = f"http://127.0.0.1:{port}"
             for _ in range(150):
-                if any(process.poll() is not None for process in processes):
+                if any(child.process.poll() is not None for child in processes):
                     raise RuntimeError(f"Development process exited; inspect {artifacts} logs.")
                 try:
                     with urlopen(url, timeout=1) as response:
@@ -99,8 +88,7 @@ def isolated_server(artifacts):
                 raise RuntimeError("Development server did not become ready.")
             yield url, project
         finally:
-            for process in reversed(processes):
-                stop_process(process)
+            bootstrap.stop_processes(processes)
 
 
 def check_reload(page, project):

@@ -310,18 +310,23 @@ class ManagedProcess:
     job: WindowsJob | None = None
 
 
-def start_process(name: str, command: list[str], cwd: Path) -> ManagedProcess:
+def start_process(name: str, command: list[str], cwd: Path, *,
+                  env: dict[str, str] | None = None, stdin=None, stdout=None,
+                  stderr=None) -> ManagedProcess:
     print(f"Starting {name}...", flush=True)
     if os.name != "nt":
-        return ManagedProcess(name, subprocess.Popen(command, cwd=cwd, start_new_session=True))
+        return ManagedProcess(name, subprocess.Popen(
+            command, cwd=cwd, env=env, stdin=stdin, stdout=stdout, stderr=stderr,
+            start_new_session=True,
+        ))
     # Gate the wrapper on stdin so it cannot spawn anything until its Job Object
     # owns it. Assigning an already-running npm or autoreloader has an orphan race.
     job = WindowsJob()
     process = None
     try:
         process = subprocess.Popen([sys.executable, "-u", str(Path(__file__).resolve()), "_child"],
-                                   cwd=cwd, stdin=subprocess.PIPE, text=True,
-                                   creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+                                   cwd=cwd, env=env, stdin=subprocess.PIPE, text=True,
+                                   stdout=stdout, stderr=stderr, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
         job.attach(process.pid)
         process.stdin.write(json.dumps(command) + "\n")
         process.stdin.close()
