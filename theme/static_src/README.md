@@ -34,3 +34,7 @@ Tailwind 4 handles imports, nesting and vendor prefixes. The former PostCSS and
 Tailwind 3 JavaScript configuration is no longer used. The old forms, typography,
 line-clamp and aspect-ratio plugins were unused in the demo; daisyUI provides the
 form components, and line-clamp and aspect-ratio utilities are built into Tailwind.
+
+Run `npm --prefix theme/static_src test` from the root to compile an isolated
+copy, verify the demo components and all three theme palettes, and prove that
+the watcher rebuilds both edited and newly created templates.

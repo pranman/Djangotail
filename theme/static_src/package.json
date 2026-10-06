@@ -6,7 +6,8 @@
     "start": "npm run dev",
     "build": "tailwindcss -i ./src/styles.css -o ../static/css/dist/styles.css --minify",
     "dev": "tailwindcss -i ./src/styles.css -o ../static/css/dist/styles.css --watch=always",
-    "tailwindcss": "tailwindcss"
+    "tailwindcss": "tailwindcss",
+    "test": "node --test tests/*.test.mjs"
   },
   "license": "MIT",
   "devDependencies": {
