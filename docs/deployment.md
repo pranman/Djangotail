@@ -36,7 +36,7 @@ interpreter and production environment variables are set. With uv, use
 `uv run --no-dev python` in place of `python` to avoid adding development tools.
 
 ```bash
-npm --prefix theme/static_src ci
+npm --prefix theme/static_src ci --include=dev
 npm --prefix theme/static_src run build
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
@@ -51,6 +51,10 @@ Apply database migrations under your deployment's backup and rollout process.
 Node/npm are needed in the build stage. They are not required by the running
 Django process once assets are built and collected. Development browser reload
 and Playwright are not part of the runtime requirements.
+
+The frontend compiler and component packages are npm `devDependencies` because
+they are build tools. `--include=dev` installs them even when the host sets
+`NODE_ENV=production`. This is separate from Python's `--no-dev` runtime install.
 
 ## Serve the application
 

@@ -1,5 +1,7 @@
 # Django + Tailwind CSS + daisyUI Starter Template
 
+[![Verify starter](https://github.com/pranman/django-tailwind-daisyui-template/actions/workflows/verify.yml/badge.svg)](https://github.com/pranman/django-tailwind-daisyui-template/actions/workflows/verify.yml)
+
 A Django starter with Tailwind CSS, daisyUI components, one-command setup, and
 a tested development workflow. Start with server-rendered pages, a local SQLite
 database, and a CSS build you can customize.
@@ -37,9 +39,11 @@ Install these tools and make them available in your terminal:
 | npm | 10 or 11, normally supplied with Node.js |
 | [uv](https://docs.astral.sh/uv/getting-started/installation/) | Optional; setup uses pip when uv is absent |
 
-The intended platforms are Linux, macOS and Windows. `.python-version` selects
+The supported platforms are Linux, macOS and Windows. `.python-version` selects
 Python 3.13 for uv; `.nvmrc` selects Node 24 for compatible version managers.
 The bootstrap script checks prerequisites and does not install system runtimes.
+The [verification matrix](docs/verification.md#hosted-matrix) records the tested
+combinations; browser automation uses Chromium on Linux.
 
 ## Start a project
 
@@ -90,6 +94,17 @@ and the project layout.
 [Deployment](docs/deployment.md) covers production settings, migrations, asset
 builds and static collection. [Troubleshooting](docs/troubleshooting.md) covers
 missing tools, failed installs and stale CSS.
+
+## Verification and support
+
+[Verification](docs/verification.md) explains cold setup, safe reruns, process
+cleanup and production checks. [Browser checks](docs/browser-checks.md) cover
+rendered styling, theme changes, accessibility and real reload. The aggregate
+**Starter verification** check must pass before a release.
+
+See the [support policy](docs/support.md), [security reporting](SECURITY.md) and
+[changelog](CHANGELOG.md) for maintenance and release information. This is a
+source template; a PyPI project generator is not currently provided.
 
 ## License and acknowledgements
 
