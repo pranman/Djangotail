@@ -141,13 +141,62 @@ def port_is_closed(port):
         return probe.connect_ex(("127.0.0.1", port)) != 0
 
 
+
+def watcher_initial_build_complete(output):
+    """Match the pinned CLI's initial-build diagnostics after watcher launch."""
+    import re
+    plain = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", output)
+    # Bootstrap also runs a production build first. Its completion must never
+    # satisfy readiness for the separate long-running watcher.
+    _, launched, watcher_output = plain.partition("Starting CSS watcher...")
+    if not launched:
+        return False
+    before_initial, initial, _ = watcher_output.partition("[@tailwindcss/cli] (initial build)")
+    # Generic 'Done in' can also describe a no-op incremental callback. DEBUG's
+    # specific initial-build completion disambiguates those startup messages.
+    return bool(initial and any(line.startswith("Done in ") for line in before_initial.splitlines()))
+
+
+def wait_for_development_ready(process, base_url, logfile, *, timeout=60):
+    """Require both a live HTTP endpoint and completed initial watcher output."""
+    import re
+    import time
+    from urllib.error import URLError
+    from urllib.request import urlopen
+
+    deadline = time.monotonic() + timeout
+    http_ready = watcher_ready = False
+    while time.monotonic() < deadline:
+        output = logfile.read_text(encoding="utf-8", errors="replace")
+        failure = re.search(r"(Django|CSS watcher) exited with code (-?\d+)", output)
+        if failure:
+            raise VerificationError(f"{failure.group(0)} before development was ready; see development.log.")
+        code = process.poll()
+        if code is not None:
+            raise VerificationError(f"Development launcher exited before readiness (code {code}); see development.log.")
+        watcher_ready = watcher_initial_build_complete(output)
+        try:
+            with urlopen(base_url, timeout=max(0.01, min(1, deadline - time.monotonic()))) as response:
+                http_ready = response.status == 200
+        except (URLError, TimeoutError):
+            http_ready = False
+        if http_ready and watcher_ready and process.poll() is None:
+            return
+        time.sleep(0.05)
+    missing = []
+    if not http_ready:
+        missing.append("Django HTTP response")
+    if not watcher_ready:
+        missing.append("CSS watcher initial build")
+    raise VerificationError("Development startup timed out waiting for " + " and ".join(missing)
+                            + "; see development.log.")
+
+
 @contextmanager
 def development_server(checkout, log):
     """Run the real public launcher and verify its HTTP server stops on interruption."""
     import signal
     import sys
-    from urllib.error import URLError
-    from urllib.request import urlopen
 
     with reserve_port() as reservation:
         port = reservation.getsockname()[1]
@@ -158,19 +207,16 @@ def development_server(checkout, log):
     with filename.open("w", encoding="utf-8") as output:
         process = subprocess.Popen(
             [sys.executable, str(checkout.root / "bootstrap.py"), "dev", "--port", str(port)],
-            cwd=checkout.caller, env=checkout.environment, stdout=output, stderr=subprocess.STDOUT,
-            **options,
+            cwd=checkout.caller, env=dict(checkout.environment, DEBUG="tailwindcss"),
+            stdout=output, stderr=subprocess.STDOUT, **options,
         )
         try:
-            def ready():
-                if process.poll() is not None:
-                    raise VerificationError(f"Development launcher exited early ({process.returncode}).")
-                try:
-                    with urlopen(base_url, timeout=1) as response:
-                        return response.status == 200
-                except (URLError, TimeoutError):
-                    return False
-            wait_until(ready, "Django did not become ready; see development.log.", timeout=60)
+            try:
+                wait_for_development_ready(process, base_url, filename)
+            except VerificationError as error:
+                log.write("development-readiness", str(error) + "\n")
+                raise
+            log.write("development-readiness", "Django HTTP 200 and CSS watcher initial build confirmed.\n")
             yield base_url
         finally:
             if process.poll() is None:
