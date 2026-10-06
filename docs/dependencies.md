@@ -31,3 +31,14 @@ python -m pip install --require-hashes -r requirements-dev.txt
 For production dependencies use `uv sync --frozen --no-dev`, or install the
 hashed `requirements.txt` export. Production settings must not enable the
 development-only browser reload integration.
+
+Verify the lock and both installation paths in disposable copies:
+
+```bash
+python scripts/check_dependencies.py --check-exports
+```
+
+Use `--exports-only` for a fast drift check or `--installer uv` / `--installer pip`
+to test one path. Installation checks use the Python running the script and
+require package-index access. They run dependency consistency checks, Django
+checks and migrations, then compare uv/pip inventories when both are selected.
