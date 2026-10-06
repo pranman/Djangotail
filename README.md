@@ -1,14 +1,14 @@
 <!-- markdownlint-disable MD013 MD033 MD041 -->
 <div align="center">
 <h1>
-Django-Tailwind-DaisyUI Template
+Django + Tailwind CSS + daisyUI Starter Template
 </h1>
 </div>
 
 <p align="center">
 <a href="https://www.djangoproject.com/"><img src="https://img.shields.io/badge/Django-092E20?style=flat-square&logo=django&logoColor=white" alt="Django badge" /></a>
 <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind CSS badge" /></a>
-<a href="https://daisyui.com/"><img src="https://img.shields.io/badge/DaisyUI-5A0EF8?style=flat-square&logo=daisyui&logoColor=white" alt="DaisyUI badge" /></a>
+<a href="https://daisyui.com/"><img src="https://img.shields.io/badge/daisyUI-5A0EF8?style=flat-square&logo=daisyui&logoColor=white" alt="daisyUI badge" /></a>
 <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python badge" /></a>
 <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js badge" /></a>
 </p>
@@ -23,15 +23,15 @@ Django-Tailwind-DaisyUI Template
 
 ## Overview <a name="overview"></a>
 
-A modern Django project template with Tailwind CSS and DaisyUI integration, providing a beautiful, responsive UI framework with minimal effort. This template combines the power of Django's backend capabilities with the utility-first approach of Tailwind CSS and the component-rich features of DaisyUI.
+A Django starter template with Tailwind CSS, daisyUI components, one-command setup, and a tested development workflow.
 
-Perfect for quickly bootstrapping web applications with a professional look and feel, while maintaining complete customisation control.
+Use it as a starting point for a Django application with server-rendered templates and a local CSS build.
 
 ## Features <a name="features"></a>
 
 - **Django Integration**: Full Django framework with best practices
 - **Tailwind CSS**: Utility-first CSS framework for rapid UI development
-- **DaisyUI Components**: Pre-designed beautiful components built on Tailwind CSS
+- **daisyUI Components**: Pre-designed beautiful components built on Tailwind CSS
 - **Theme Support**: Multiple themes with easy switching capability
 - **Responsive Design**: Mobile-first responsive layouts
 - **Environment Configuration**: Environment variables support via dotenv
@@ -124,7 +124,7 @@ TAILWIND_APP_NAME = 'theme'
 NPM_BIN_PATH = os.getenv('NPM_BIN_PATH')  # Loaded from .env file
 ```
 
-### Adding More DaisyUI Themes
+### Adding More daisyUI Themes
 
 To add more themes, update the `daisyui.themes` array in `tailwind.config.js`:
 
