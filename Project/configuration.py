@@ -1,6 +1,7 @@
 """Small, explicit parsers for the project environment contract."""
 
 import os
+from urllib.parse import urlsplit
 
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
@@ -47,3 +48,40 @@ def env_required(name):
             "file; use the root bootstrap script for local development."
         )
     return value
+
+
+def env_nonnegative_int(name, default=0):
+    try:
+        value = int(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        raise ImproperlyConfigured(f"{name} must be a nonnegative integer.") from None
+    if value < 0:
+        raise ImproperlyConfigured(f"{name} must be a nonnegative integer.")
+    return value
+
+
+def csrf_origins():
+    name = "DJANGO_CSRF_TRUSTED_ORIGINS"
+    origins = env_list(name)
+    for origin in origins:
+        try:
+            parsed = urlsplit(origin)
+            valid = (
+                parsed.scheme in {"http", "https"}
+                and parsed.hostname
+                and not parsed.username
+                and not parsed.password
+                and not parsed.path
+                and not parsed.query
+                and not parsed.fragment
+            )
+            # Accessing port checks malformed/non-numeric/out-of-range values.
+            parsed.port
+        except ValueError:
+            valid = False
+        if not valid:
+            raise ImproperlyConfigured(
+                f"{name} entries must be origins such as https://example.com "
+                "(optional port, no path, query or credentials)."
+            )
+    return origins
