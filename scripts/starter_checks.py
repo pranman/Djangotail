@@ -215,6 +215,8 @@ def verify_lifecycle(checkout, log, browser_check=None):
         wait_until(lambda: "--starter-watch-check" not in compiled.read_text(encoding="utf-8"),
                    "The CSS watcher did not restore the original compiled stylesheet.")
         if browser_check is not None:
+            drained = settle_browser_reload(base_url)
+            log.write("browser-readiness", f"Drained {drained} pending reload event(s); three stable heartbeats received.\n")
             browser_check(base_url)
 
     # Trigger a real npm watcher failure in the disposable fixture, then ensure
@@ -238,6 +240,42 @@ def verify_lifecycle(checkout, log, browser_check=None):
     finally:
         package_file.write_bytes(original)
     print("Development readiness, watching, occupied ports, interruption and failure verified.", flush=True)
+
+
+
+def settle_browser_reload(base_url, *, timeout=15):
+    """Drain queued watcher events before a browser starts inspecting the page.
+
+    A completed CSS write can still be waiting for Django's filesystem poller.
+    Consume the real reload stream until three consecutive heartbeats show that
+    its startup/source-probe events have settled. The browser then connects with
+    a fresh stream and still verifies subsequent template and CSS reloads.
+    """
+    import json
+    import time
+    from urllib.request import Request, urlopen
+
+    request = Request(base_url.rstrip("/") + "/__reload__/events/",
+                      headers={"Accept": "text/event-stream"})
+    deadline = time.monotonic() + timeout
+    consecutive_pings = 0
+    reloads = 0
+    with urlopen(request, timeout=timeout) as stream:
+        while time.monotonic() < deadline:
+            line = stream.readline()
+            if not line:
+                raise VerificationError("The browser-reload readiness stream closed before it settled.")
+            if not line.startswith(b"data: "):
+                continue
+            event = json.loads(line.removeprefix(b"data: "))
+            if event.get("type") == "reload":
+                consecutive_pings = 0
+                reloads += 1
+            elif event.get("type") == "ping":
+                consecutive_pings += 1
+                if consecutive_pings == 3:
+                    return reloads
+    raise VerificationError("Browser reload kept changing before rendering checks; see development.log.")
 
 
 def verify_stylesheet_response(checkout, base_url):

@@ -51,6 +51,6 @@ The checks prove that:
 
 ## Diagnostics
 
-Each run writes named step logs under `verification-artifacts/`. GitHub retains these as `starter-<lane>` artifacts for seven days, including browser screenshots and traces when produced. On failure, start with the log whose step name appears in the error, then the development log or browser artifacts. Reproduce the failing lane's Python, Node, installer, and command locally.
+Each run writes named step logs under `verification-artifacts/`. GitHub retains these as `starter-<lane>` artifacts for seven days, including browser screenshots and traces when produced. On failure, start with the log whose step name appears in the error, then the development log or browser artifacts. `browser-readiness.log` records the startup reload events drained before Chromium begins inspecting the page; the suite still tests real later template/CSS reloads. Reproduce the failing lane's Python, Node, installer, and command locally.
 
 Only the diagnostics directory is uploaded. The disposable checkout, `.env`, SQLite database, dependency directories, and credentials are not uploaded. Generated secret values are removed from logs, including failure logs. Avoid adding environment dumps or copying the whole temporary project into artifacts when extending these checks.
