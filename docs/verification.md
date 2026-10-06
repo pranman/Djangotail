@@ -53,6 +53,43 @@ The checks prove that:
 - The homepage serves the real compiled stylesheet once. Chromium checks representative utility/component computed styles, light/dark/cupcake themes, keyboard/mobile behavior, accessibility, and real CSS/template browser reload.
 - A production CSS build is collected without changing its bytes in a separate environment installed from hashed `requirements.txt`, with Playwright and browser-reload absent; an explicit representative HTTPS configuration passes `check --deploy --fail-level WARNING`; WSGI starts with Node/npm absent from PATH. Deployment infrastructure and database suitability still require the application's own deployment decisions.
 
+## Development readiness
+
+Before the lifecycle check edits source CSS, the verifier requires both an HTTP
+200 response from Django and successful completion of the CSS watcher's initial
+build. An HTTP response alone is insufficient: Django can begin serving while
+Tailwind is still reading its initial input or installing filesystem watches.
+The production build performed before the launcher starts its children is also
+not evidence that the separate watcher is ready.
+
+The verifier enables `DEBUG=tailwindcss` only for its development subprocesses.
+For the pinned CLI, it requires a successful `Done in` message and the specific
+`[@tailwindcss/cli] (initial build)` completion diagnostic after
+`Starting CSS watcher...`. This distinguishes the watcher's completed startup
+from the preceding production build and from incremental/no-op callbacks.
+ANSI colors and Windows line endings are accepted. The application and normal
+bootstrap commands do not need this diagnostic environment variable.
+
+`development-readiness.log` records the two readiness conditions or names the
+condition that timed out. A managed child or launcher exit is reported with its
+exit code when available; inspect `development.log` for the underlying error.
+A startup timeout does not cause the verifier to edit CSS early or skip checks.
+If a Tailwind CLI update changes its diagnostics, update the readiness parser
+and regression fixtures together; retain the requirement for actual watcher
+startup completion.
+
+After startup, the suite still performs a real CSS edit and restoration and
+waits for both compiled results. It then drains pending browser-reload events
+before inspecting rendered styles. `browser-readiness.log` describes that
+separate reload-stream check. The later browser test still makes and verifies
+new template and CSS edits.
+
+Focused regressions use a real HTTP process with a watcher completion gate to
+exercise HTTP-first startup, delayed initial compilation, no-op callbacks,
+early exit, and timeout without using a fixed startup delay. These tests support
+the hosted matrix; local results do not replace successful checks on every
+platform lane for the release commit.
+
 ## Diagnostics
 
 Each run writes named step logs under `verification-artifacts/`. GitHub retains these as `starter-<lane>` artifacts for seven days, including browser screenshots and traces when produced. On failure, start with the log whose step name appears in the error, then the development log or browser artifacts. `browser-readiness.log` records the startup reload events drained before Chromium begins inspecting the page; the suite still tests real later template/CSS reloads. Reproduce the failing lane's Python, Node, installer, and command locally.
