@@ -66,7 +66,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         theme.mkdir()
         for filename in ("__init__.py", "apps.py"):
             shutil.copyfile(ROOT / "theme" / filename, theme / filename)
-        shutil.copytree(ROOT / "theme" / "templates", theme / "templates")
+        shutil.copytree(ROOT / "templates", self.project / "templates")
         self.css = theme / "static" / "css" / "dist" / "styles.css"
         self.css.parent.mkdir(parents=True)
         self.css.write_text(".configuration-fixture { display: block; }\n", encoding="utf-8")

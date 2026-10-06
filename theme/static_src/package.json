@@ -12,6 +12,7 @@
   "license": "MIT",
   "devDependencies": {
     "@tailwindcss/cli": "4.3.3",
+    "axe-core": "4.14.0",
     "daisyui": "5.7.47",
     "tailwindcss": "4.3.3"
   },

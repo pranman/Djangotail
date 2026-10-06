@@ -6,8 +6,34 @@
 @source "../../../*/static/**/*.js";
 
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark, cupcake;
+  themes: light --default, cupcake;
+}
+
+/* Inherit the dark palette and raise small primary-text contrast to WCAG AA. */
+@plugin "daisyui/theme" {
+  name: "dark";
+  prefersdark: true;
+  --color-primary-content: #fff;
 }
 
 /* Match Tailwind dark: utilities to the theme selected in the demo. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@layer base {
+  :where(a, button, input, select):focus-visible {
+    outline: 3px solid var(--color-base-content);
+    outline-offset: 4px;
+  }
+
+  html {
+    scroll-padding-top: 1.5rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

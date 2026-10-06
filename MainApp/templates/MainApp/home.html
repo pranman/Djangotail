@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-24" aria-labelledby="intro-heading">
+    <div>
+        <p class="mb-5 text-sm font-semibold uppercase tracking-widest">Your next project starts here</p>
+        <h1 id="intro-heading" class="text-4xl leading-tight font-bold tracking-tight sm:text-5xl">Django +<br>Tailwind CSS +<br><span class="underline decoration-primary decoration-4 underline-offset-8">daisyUI.</span></h1>
+        <p class="mt-5 text-xl font-medium">Starter Template</p>
+        <p class="mt-4 max-w-lg leading-relaxed">A familiar backend, flexible utilities, and components that already fit together. A small foundation with room for your ideas.</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+            <a href="#playground" class="btn btn-primary">Try the playground <span aria-hidden="true">↗</span></a>
+            <a href="https://docs.djangoproject.com/en/5.2/" class="btn btn-outline">Django documentation</a>
+        </div>
+    </div>
+    <div class="rounded-3xl border border-base-300 bg-base-200 p-5 sm:p-8" aria-label="The three layers of this starter">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3 text-sm">
+            <span class="font-semibold">One connected stack</span>
+            <span class="badge badge-outline">Ready to customize</span>
+        </div>
+        <div class="space-y-3">
+            <div class="card border border-base-300 bg-base-100 shadow-sm">
+                <div class="card-body flex-row items-center gap-4 p-5">
+                    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-base-200 font-mono font-semibold" aria-hidden="true">01</span>
+                    <div><h2 class="font-semibold">Django</h2><p class="mt-1 text-sm">Templates, views, and a solid backend.</p></div>
+                </div>
+            </div>
+            <div class="card border border-base-300 bg-base-100 shadow-sm">
+                <div class="card-body flex-row items-center gap-4 p-5">
+                    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-base-200 font-mono font-semibold" aria-hidden="true">02</span>
+                    <div><h2 class="font-semibold">Tailwind CSS</h2><p class="mt-1 text-sm">Small utilities. Your own visual language.</p></div>
+                </div>
+            </div>
+            <div class="card border border-primary bg-primary text-primary-content shadow-sm">
+                <div class="card-body flex-row items-center gap-4 p-5">
+                    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-current font-mono font-semibold" aria-hidden="true">03</span>
+                    <div><h2 class="font-semibold">daisyUI</h2><p class="mt-1 text-sm">Components and themes, ready to build on.</p></div>
+                </div>
+            </div>
+        </div>
+        <p class="mt-6 text-center font-mono text-xs">Templates → utilities → components</p>
+    </div>
+</section>
+
+<section id="components" class="border-t border-base-300 pt-12" aria-labelledby="components-heading">
+    <div class="mb-7 flex flex-wrap items-end justify-between gap-3">
+        <div><p class="mb-2 text-sm font-semibold uppercase tracking-widest">The building blocks</p><h2 id="components-heading" class="text-3xl font-bold tracking-tight">Less setup. More making.</h2></div>
+        <p class="text-sm">Three tools, one template.</p>
+    </div>
+    <div class="grid gap-5 md:grid-cols-3">
+        <article class="card border border-base-300 bg-base-100">
+            <div class="card-body gap-4">
+                <span class="badge badge-neutral">Django 5.2 LTS</span>
+                <h3 class="card-title">A clear starting point</h3>
+                <p class="leading-relaxed">One shared layout and an app template you can replace with your first page.</p>
+                <div class="card-actions mt-2"><a class="link font-medium" href="https://docs.djangoproject.com/en/5.2/topics/templates/">Explore Django templates <span aria-hidden="true">↗</span></a></div>
+            </div>
+        </article>
+        <article class="card border border-base-300 bg-base-100">
+            <div class="card-body gap-4">
+                <span class="badge badge-neutral">Tailwind CSS 4</span>
+                <h3 class="card-title">A layout that adapts</h3>
+                <p class="leading-relaxed">Responsive grids, spacing, and typography live alongside your markup.</p>
+                <div class="card-actions mt-2"><a class="link font-medium" href="https://tailwindcss.com/docs/responsive-design">Explore responsive utilities <span aria-hidden="true">↗</span></a></div>
+            </div>
+        </article>
+        <article class="card border border-base-300 bg-base-100">
+            <div class="card-body gap-4">
+                <span class="badge badge-neutral">daisyUI 5</span>
+                <h3 class="card-title">Components with character</h3>
+                <p class="leading-relaxed">Cards, buttons, and form controls share a palette across light, dark, and cupcake.</p>
+                <div class="card-actions mt-2"><a class="link font-medium" href="https://daisyui.com/components/">Explore daisyUI components <span aria-hidden="true">↗</span></a></div>
+            </div>
+        </article>
+    </div>
+</section>
+
+<section id="playground" class="mt-14 rounded-3xl border border-base-300 bg-base-200 p-6 sm:p-8" aria-labelledby="playground-heading">
+    <div class="mb-8 flex flex-wrap items-start justify-between gap-6">
+        <div><p class="mb-2 text-sm font-semibold uppercase tracking-widest">Make yourself at home</p><h2 id="playground-heading" class="text-3xl font-bold tracking-tight">A little playground.</h2><p class="mt-3">Change the theme, then try a styled form.</p></div>
+        <div class="w-full sm:w-48">
+            <label for="theme-select" class="mb-2 block text-sm font-semibold">Color theme</label>
+            <select id="theme-select" disabled class="select w-full bg-base-100" aria-describedby="theme-help">
+                <option value="light">Light</option><option value="dark">Dark</option><option value="cupcake">Cupcake</option>
+            </select>
+            <p id="theme-help" class="mt-2 text-xs">Saved in this browser.</p>
+        </div>
+    </div>
+    <noscript><p class="mb-6 rounded-lg border border-base-300 bg-base-100 p-4">Enable JavaScript to switch themes and use the local preview. Documentation links remain available.</p></noscript>
+    <div class="grid gap-8 md:grid-cols-2">
+        <form id="preview-form" aria-describedby="form-help">
+            <fieldset disabled class="space-y-5">
+            <legend class="mb-5 text-lg font-semibold">Personalize the preview</legend>
+            <div>
+                <label for="display-name" class="mb-2 block text-sm font-medium">Display name</label>
+                <input id="display-name" name="display_name" type="text" class="input w-full bg-base-100" maxlength="60" placeholder="Your name" autocomplete="off" aria-describedby="form-help">
+            </div>
+            <p id="form-help" class="text-sm">A local demo: this form does not send or save your name.</p>
+            <div class="flex flex-wrap gap-3"><button type="submit" class="btn btn-primary">Update preview</button><button type="reset" class="btn btn-outline">Reset</button></div>
+            </fieldset>
+        </form>
+        <div class="card border border-base-300 bg-base-100">
+            <div class="card-body justify-center gap-4">
+                <span class="badge badge-outline">Live preview</span>
+                <h3 id="preview-heading" class="text-2xl font-bold" aria-live="polite" aria-atomic="true">Hello, maker.</h3>
+                <p class="leading-relaxed">Your idea belongs here. Keep the pieces you need, change the rest, and start building.</p>
+                <div class="flex gap-2" aria-hidden="true"><span class="h-3 w-10 rounded-full bg-primary"></span><span class="h-3 w-10 rounded-full bg-secondary"></span><span class="h-3 w-10 rounded-full bg-accent"></span></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
