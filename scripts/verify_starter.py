@@ -6,8 +6,9 @@ import argparse
 from pathlib import Path
 import sqlite3
 import sys
+import subprocess
 
-from starter_checks import CommandLog, VerificationError, disposable_checkout
+from starter_checks import CommandLog, VerificationError, disposable_checkout, verify_lifecycle
 
 
 def verify_setup(checkout, installer, log):
@@ -59,7 +60,8 @@ def main():
     try:
         with disposable_checkout(cold=args.cold) as checkout:
             verify_setup(checkout, args.installer, log)
-    except (VerificationError, OSError, sqlite3.Error) as error:
+            verify_lifecycle(checkout, log)
+    except (VerificationError, OSError, sqlite3.Error, subprocess.TimeoutExpired) as error:
         print(f"Starter verification failed: {log.redact(str(error))}", file=sys.stderr)
         return 1
     print("Starter workflow verified.")
