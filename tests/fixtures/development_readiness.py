@@ -2,10 +2,19 @@
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+from socketserver import TCPServer
 from pathlib import Path
 import sys
 import threading
 import time
+
+
+class LoopbackHTTPServer(ThreadingHTTPServer):
+    def server_bind(self):
+        # HTTPServer normally reverse-resolves its address with getfqdn().
+        # This local fixture needs no hostname discovery or external DNS.
+        TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
 
 
 def wait_for(path):
@@ -27,7 +36,8 @@ def main():
         def log_message(self, *args):
             pass
 
-    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+    print("Binding the loopback HTTP fixture without hostname discovery.", flush=True)
+    with LoopbackHTTPServer(("127.0.0.1", 0), Handler) as server:
         address = directory / "address.json"
         temporary = address.with_suffix(".tmp")
         temporary.write_text(json.dumps({"url": f"http://127.0.0.1:{server.server_port}"}))
