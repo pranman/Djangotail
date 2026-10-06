@@ -1,0 +1,9 @@
+[project]
+name = "django-tailwind-daisyui-template"
+version = "0.1.0"
+description = "A Django starter with Tailwind CSS and daisyUI."
+requires-python = ">=3.12,<3.15"
+dependencies = []
+
+[tool.uv]
+package = false
