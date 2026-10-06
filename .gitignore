@@ -44,6 +44,8 @@ theme/static/css/build/
 
 # Environment
 .env
+.env.*
+!.env.example
 .venv
 
 # Editor/IDE
